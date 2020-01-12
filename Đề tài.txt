@@ -1,0 +1,5 @@
+1. Xây dựng hệ thống quản lý công văn đến và đi của trường ĐH Đà Lạt.
+2. Cài đặt thuật toán Luật kết hợp mờ.
+3. Cài đặt thuật toán rút gọn thuộc tính (reduct attribute).
+4. Cài đặt thuật toán rút gọn bộ (dòng) (reduct object).
+5. Xây dựng hệ thống xét tuyển đại học

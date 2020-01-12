@@ -1,0 +1,196 @@
+﻿CREATE DATABASE QLSV
+ON PRIMARY
+(
+	NAME = 'QLSV',
+    FILENAME = 'D:\OneDrive\Thang\HOCTAP\2019-2020\HKI\HQTCSDL\Lab\QLSV.mdf',
+    SIZE = 4MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+)
+LOG ON
+(
+	NAME = 'QLSV_LOG',
+    FILENAME = 'D:\OneDrive\Thang\HOCTAP\2019-2020\HKI\HQTCSDL\Lab\QLSV_LOG.ldf',
+    SIZE = 1MB,
+    MAXSIZE = 10MB,
+    FILEGROWTH = 1MB
+);
+GO
+
+USE QLSV;
+CREATE TABLE Khoa (
+	MaKhoa char(4) NOT NULL PRIMARY KEY,
+	TenKhoa nvarchar(30) NOT NULL,
+	DiaChi nvarchar(50) NULL,
+	DienThoai varchar(10)
+);
+GO
+
+CREATE TABLE SinhVien (
+	MaSV char(8) NOT NULL PRIMARY KEY,
+	HoTen nvarchar(30) NOT NULL,
+	NgaySinh Datetime,
+	MaKhoa char(4) REFERENCES Khoa (MaKhoa)
+);
+GO
+
+CREATE TABLE MonHoc (
+	MaMon varchar(5) NOT NULL PRIMARY KEY,
+	TenMon nvarchar(30) NOT NULL,
+	SoTinChi SmallInt,
+	TenGV nvarchar(30)
+);
+GO
+
+CREATE TABLE DangKyHoc (
+	MaSV char (8),
+	MaMon varchar(5),
+	HocKy smallInt
+);
+GO
+
+USE QLSV
+INSERT INTO Khoa VALUES ('TOAN', N'Toán - Tin', N'Nhà C','37547325');
+INSERT INTO Khoa VALUES ('CNTT', N'Công nghệ thông tin', N'Nhà C','37547100')
+INSERT INTO Khoa (MaKhoa,TenKhoa,DiaChi) VALUES ('DIAL',N'Địa lý',N'Nhà A1')
+INSERT INTO Khoa (MaKhoa,TenKhoa,DiaChi) VALUES ('HOAH', N'Hóa học',N'Nhà A2')	
+GO
+
+INSERT INTO SinhVien VALUES ('K6100001',N'Phạm Văn Bình', '1990-2-24','TOAN')
+INSERT INTO SinhVien VALUES ('K6100002',N'Nguyễn Thị Hoài','1991-4-12','CNTT')
+INSERT INTO SinhVien VALUES('K6100003',N'Trần Ngọc','1990-4-15','DIAL')
+INSERT INTO SinhVien VALUES('K6100004',N'Nguyễn Tấn Dũng','1992-2-3','CNTT')
+INSERT INTO SinhVien VALUES('K6100005',N'Trương Tấn Sang','1990-12-4','DIAL')
+INSERT INTO SinhVien VALUES('K6100006',N'Nguyễn Sinh Hùng','1992-3-3','HOAH')
+GO
+
+INSERT INTO Monhoc VALUES('GT1',N'Giải tích 1',2,N'Đỗ Đức Thái')
+INSERT INTO Monhoc VALUES('DSTT',N'Đại số tuyến tính',3,N'Nguyễn Văn Trào')
+INSERT INTO Monhoc VALUES('HH',N'Hình học Afin',2,N'Nguyễn Doãn Tuấn')
+INSERT INTO Monhoc VALUES('XSTK',N'Xác suất thống kê',2,N'Đỗ Đức Thái')
+GO
+
+INSERT INTO DangKyHoc VALUES('K6100001','GT1',1)
+INSERT INTO DangKyHoc VALUES('K6100001','DSTT',2)
+INSERT INTO DangKyHoc VALUES('K6100001','HH',	1)
+INSERT INTO DangKyHoc VALUES('K6100002','DSTT',1)
+INSERT INTO DangKyHoc VALUES('K6100002','XSTK',2)
+INSERT INTO DangKyHoc VALUES('K6100002','GT1',1)
+INSERT INTO DangKyHoc VALUES('K6100003','HH',1)
+INSERT INTO DangKyHoc VALUES('K6100003','GT1',1)
+INSERT INTO DangKyHoc VALUES('K6100003','XSTK',	2)
+INSERT INTO DangKyHoc VALUES('K6100004','XSTK',3)
+INSERT INTO DangKyHoc VALUES('K6100004','DSTT',3)
+INSERT INTO DangKyHoc VALUES('K6100004','DSTT',	1)
+GO
+
+--VIEW DS_SINHVIEN_THEOKHOA
+
+CREATE VIEW [dbo].[VIEW_DS_SINHVIEN_THEOKHOA]
+	AS SELECT TOP (100) PERCENT MaSV, HoTen, NgaySinh, TenKhoa
+	FROM KHOA K, SinhVien SV
+	WHERE SV.MaKhoa = K.MaKhoa
+	ORDER BY TenKhoa ASC, HoTen ASC;
+GO
+
+-- Thủ tục DSMonHoc
+
+CREATE PROCEDURE DS_MONHOC
+	@MASV CHAR(8)
+AS
+BEGIN
+	SELECT MaMon
+	FROM SinhVien SV, DangKyHoc DK
+	WHERE SV.MaSV = DK.MaSV AND SV.MaSV = @MASV
+END
+GO
+
+EXEC DS_MONHOC K6100001
+GO
+
+-- Thủ tục DSSinhVien
+
+CREATE PROCEDURE DS_SINHVIEN
+	@TENMON NVARCHAR(30)
+AS
+BEGIN
+	SELECT SV.MaSV, SV.HoTen, TenKhoa
+	FROM SinhVien SV, Khoa K, MonHoc MH, DangKyHoc DK
+	WHERE SV.MaKhoa = K.MaKhoa AND SV.MaSV = DK.MaSV AND DK.MaMon = MH.MaMon AND TenMon = @TENMON
+END
+GO
+
+EXEC DS_SINHVIEN N'Giải tích 1'
+GO
+
+-- Hàm SoLuongSV trả về số lượng sinh viên của một khoa
+
+CREATE FUNCTION SoLuongSV (@TENKHOA NVARCHAR(30))
+RETURNS INT
+AS
+BEGIN
+	RETURN (SELECT COUNT(*)
+	FROM SinhVien SV INNER JOIN Khoa K
+	ON SV.MaKhoa = K.MaKhoa
+	WHERE TenKhoa LIKE @TENKHOA)
+END
+GO
+
+DECLARE @KQ INT
+SET @KQ = DBO.SoLuongSV(N'Công nghệ thông tin')
+PRINT 'Số lượng sinh viên là: ' + CAST(@KQ AS VARCHAR)
+GO
+
+-- Hàm DSMonHoc
+
+CREATE FUNCTION UDF_DSMonHoc(@MASV CHAR(8))
+RETURNS TABLE
+AS
+	RETURN (SELECT MaMon
+	FROM SinhVien SV, DangKyHoc DK
+	WHERE SV.MaSV = DK.MaSV AND SV.MaSV = @MASV)
+GO
+
+SELECT * FROM DBO.UDF_DSMonHoc('K6100001')
+GO
+
+-- Hàm DSSinhVien
+
+CREATE FUNCTION UDF_DSSinhVien (@TENMON NVARCHAR(30))
+RETURNS TABLE
+AS
+	RETURN (SELECT SV.MaSV, SV.HoTen, TenKhoa
+	FROM SinhVien SV, Khoa K, MonHoc MH, DangKyHoc DK
+	WHERE SV.MaKhoa = K.MaKhoa AND SV.MaSV = DK.MaSV AND DK.MaMon = MH.MaMon AND TenMon = @TENMON)
+GO
+
+SELECT * FROM DBO.UDF_DSSinhVien(N'Giải tích 1')
+GO
+
+-- Truy vấn Hiển thị danh sách sinh viên đăng ký nhiều môn học nhất
+
+SELECT SV.MaSV, HoTen, COUNT(SV.MaSV) AS SLDK
+FROM SinhVien SV, DangKyHoc DK
+WHERE SV.MaSV = DK.MaSV
+GROUP BY SV.MaSV, HoTen
+HAVING COUNT(SV.MaSV) =
+	(SELECT MAX(SV.SL)
+	FROM (SELECT COUNT(*) AS SL
+		FROM SinhVien SV, DangKyHoc DK
+		WHERE SV.MaSV = DK.MaSV
+		GROUP BY SV.MaSV) SV)
+GO
+
+-- Truy vấn Hiển thị danh sách sinh viên đăng ký ít môn học nhất
+
+SELECT SV.MaSV, HoTen, COUNT(SV.MaSV) AS SLDK
+FROM SinhVien SV, DangKyHoc DK
+WHERE SV.MaSV = DK.MaSV
+GROUP BY SV.MaSV, HoTen
+HAVING COUNT(SV.MaSV) =
+	(SELECT MIN(SV.SL)
+	FROM (SELECT COUNT(*) AS SL
+		FROM SinhVien SV, DangKyHoc DK
+		WHERE SV.MaSV = DK.MaSV
+		GROUP BY SV.MaSV) SV)
+GO
